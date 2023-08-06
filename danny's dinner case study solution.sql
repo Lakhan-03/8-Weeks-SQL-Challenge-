@@ -37,22 +37,29 @@ LIMIT 1;
 
 -- 5. Which item was the most popular for each customer?
 
-SELECT customer_id, product_id, product_name, item_count
-FROM (
-  SELECT customer_id, sales.product_id, product_name, COUNT(customer_id) AS item_count
-  FROM sales
-  JOIN menu ON sales.product_id = menu.product_id
-  GROUP BY customer_id, product_id, product_name
-) AS sub
-WHERE (customer_id, item_count) IN (
-  SELECT customer_id, MAX(item_count)
-  FROM (
-    SELECT customer_id, COUNT(customer_id) AS item_count
-    FROM sales
-    GROUP BY customer_id, product_id
-  ) AS sub2
-  GROUP BY customer_id
-);
+WITH sub AS (
+  SELECT customer_id, product_id, COUNT(customer_id) AS product_count
+  FROM
+    sales
+  GROUP BY
+    product_id, customer_id
+)
+
+SELECT sub.customer_id, menu.product_name, sub.product_count
+FROM
+  sub
+JOIN menu ON sub.product_id = menu.product_id
+WHERE (sub.customer_id, sub.product_count) IN (
+    SELECT customer_id, MAX(product_count)
+    FROM
+      sub
+    GROUP BY
+      customer_id
+  )
+ORDER BY
+  sub.customer_id;
+
+
 
 
 -- 6. Which item was purchased first by the customer after they became a member?
